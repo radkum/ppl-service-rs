@@ -1,0 +1,44 @@
+[workspace]
+members = [
+    "modules/elam-rs", "modules/win-service"
+]
+
+[package]
+name = "ppl-service-rs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ppl"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "~1"
+log = "~0"
+thiserror = "~1"
+winapi = "0.3"
+
+[dependencies.windows-sys]
+version = "0.59.0"
+features = [
+    "Win32_Storage",
+    "Win32_Foundation",
+    "Win32_System_IO",
+    "Win32_Security",
+    "Win32_System_Antimalware",
+    "Win32_Storage_FileSystem",
+    "Win32_Storage_InstallableFileSystems",
+    "Win32_System",
+    "Win32_System_Diagnostics",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Services",
+]
+
+
+[profile.dev]
+panic = "abort"
+lto = true
+
+[profile.release]
+panic = "abort"
+lto = true
