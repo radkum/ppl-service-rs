@@ -1,13 +1,14 @@
+#![allow(non_snake_case)]
 pub(crate) mod error;
 pub(crate) mod error_msg;
 pub(crate) mod handle_wrapper;
 
 use std::{
     ffi::{c_void, CString},
+    mem,
     ptr::null_mut,
 };
 
-use windows::core::imp::SECURITY_ATTRIBUTES;
 use windows_sys::Win32::{
     Foundation::{FALSE, HANDLE},
     Storage::FileSystem::CreateFileA,
@@ -25,7 +26,7 @@ pub(crate) fn create_file(
     name: &str,
     desired_access: u32,
     share_mode: u32,
-    _security_attr: Option<SECURITY_ATTRIBUTES>,
+    _security_attr: Option<*mut c_void>,
     creation_disp: u32,
     flags_and_attrs: u32,
     _template_file: Option<String>,
@@ -158,6 +159,21 @@ pub(crate) fn change_service_config2(
     }
 }
 
+pub(crate) fn start_service(h_service: HANDLE) -> Result<(), WinapiError> {
+    let status = unsafe {
+        StartServiceW(
+            h_service,
+            0,
+            null_mut(),
+        )
+    };
+    if status == FALSE {
+        Err(WinapiCallError::new("ControlService start").into())
+    } else {
+        Ok(())
+    }
+}
+
 pub(crate) fn stop_service(h_service: HANDLE) -> Result<SERVICE_STATUS_PROCESS, WinapiError> {
     let mut service_status: SERVICE_STATUS_PROCESS = unsafe { std::mem::zeroed() };
 
@@ -169,7 +185,7 @@ pub(crate) fn stop_service(h_service: HANDLE) -> Result<SERVICE_STATUS_PROCESS, 
         )
     };
     if status == FALSE {
-        Err(WinapiCallError::new("ControlService").into())
+        Err(WinapiCallError::new("ControlService stop").into())
     } else {
         Ok(service_status)
     }
@@ -181,6 +197,31 @@ pub(crate) fn delete_service(h_service: HANDLE) -> Result<(), WinapiError> {
     if status == FALSE {
         Err(WinapiCallError::new("DeleteService").into())
     } else {
+        Ok(())
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Default)]
+struct MY_SERVICE_STATUS {
+    dwServiceType: u32,
+    dwCurrentState: u32,
+    dwControlsAccepted: u32,
+    dwWin32ExitCode: u32,
+    dwServiceSpecificExitCode: u32,
+    dwCheckPoint: u32,
+    dwWaitHint: u32,
+}
+
+pub(crate) fn send_service_control_code(h_service: HANDLE, code: u32) -> Result<(), WinapiError> {
+    let mut service_status: MY_SERVICE_STATUS = unsafe { mem::zeroed() };
+    let status =
+        unsafe { ControlService(h_service, code, &mut service_status as *mut _ as *mut _) };
+
+    if status == FALSE {
+        Err(WinapiCallError::new("DeleteService").into())
+    } else {
+        println!("Try unprotect service. Service status: {:?}", service_status);
         Ok(())
     }
 }

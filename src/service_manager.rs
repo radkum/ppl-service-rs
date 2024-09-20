@@ -23,16 +23,12 @@ pub(crate) fn create_protected_service(
 
     let sm_service = imp_create_service(exe_file, service_name)?;
 
-    set_service_protection(sm_service.clone(), true)
+    set_service_protection(sm_service.clone())
 }
 
-fn set_service_protection(sh_service: SmartHandle, protect: bool) -> Result<(), WinapiError> {
-    let dwLaunchProtected = if protect {
-        SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT
-    } else {
-        SERVICE_LAUNCH_PROTECTED_NONE
-    };
-
+fn set_service_protection(sh_service: SmartHandle) -> Result<(), WinapiError> {
+    #[allow(non_snake_case)]
+    let dwLaunchProtected = SERVICE_LAUNCH_PROTECTED_ANTIMALWARE_LIGHT;
     let info: SERVICE_LAUNCH_PROTECTED_INFO = SERVICE_LAUNCH_PROTECTED_INFO { dwLaunchProtected };
 
     winapi::change_service_config2(sh_service.get_raw(), SERVICE_CONFIG_LAUNCH_PROTECTED, &info)
@@ -82,21 +78,49 @@ pub(crate) fn remove_protected_service(service_name: &str) -> Result<(), WinapiE
 
     let sh_service = winapi::open_service(sh_manager.get_raw(), service_name, SERVICE_ALL_ACCESS)?;
 
-    set_service_protection(sh_service.clone(), false)?;
-
     let mut status_process_info = winapi::query_service_status_process_info(sh_service.get_raw())?;
+
     for _ in 0..10 {
+        if status_process_info.dwCurrentState == SERVICE_RUNNING {
+            break;
+        }
+
+        let res = winapi::start_service(sh_service.get_raw());
+        if let Err(err) = res {
+            println!("{err}");
+        }
+        status_process_info = winapi::query_service_status_process_info(sh_service.get_raw())?;
+        thread::sleep(Duration::from_secs(1));
+    }
+
+    if status_process_info.dwCurrentState != SERVICE_RUNNING {
+        //something wrong!!!
+        println!("dwCurrentState: {}", status_process_info.dwCurrentState);
+        println!("FAILURE: service won't start");
+        return Ok(());
+    }
+
+    send_unprotect_control_code(sh_service.clone())?;
+
+    for _ in 0..10 {
+        status_process_info = winapi::query_service_status_process_info(sh_service.get_raw())?;
         if status_process_info.dwCurrentState == SERVICE_STOPPED {
             break;
         }
 
-        status_process_info = winapi::stop_service(sh_service.get_raw())?;
+        let res = winapi::stop_service(sh_service.get_raw());
+        match res {
+            Ok(status) => status_process_info = status,
+            Err(err) => println!("{err}"),
+        }
         thread::sleep(Duration::from_secs(1));
     }
 
     if status_process_info.dwCurrentState != SERVICE_STOPPED {
         //something wrong!!!
-        panic!("service won't stop")
+        println!("dwCurrentState: {}", status_process_info.dwCurrentState);
+        println!("FAILURE: service won't stop");
+        return Ok(());
     }
 
     winapi::delete_service(sh_service.get_raw())?;
@@ -130,4 +154,9 @@ pub(crate) fn remove_service(service_name: &str) -> Result<(), WinapiError> {
     println!("Success to remove service: {}", service_name);
 
     Ok(())
+}
+
+fn send_unprotect_control_code(handle: SmartHandle) -> Result<(), WinapiError> {
+    const UNPROTECT_SELF: u32 = 0x00000080;
+    winapi::send_service_control_code(handle.get_raw(), UNPROTECT_SELF)
 }
