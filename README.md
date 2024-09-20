@@ -24,6 +24,19 @@ PS: You can use `cargo make` to invoke these free last steps
 
 A signed binaries are stored in `target/debug` directory. It should be `ppl.exe`, `win-service.exe`, `elam_rs.sys`
 
+###How to run
+Place all binaries (ppl.exe, elam_rs.sys and win-service.exe) in the same folder on virtual machine. 
+
+To create protected service type `ppl create_protected <service_name>`
+
+Now you can inspect process and see it is protected.
+
+At the end call `ppl delete_protected <service_name>` to remove service
+
+IMPORTANT!!!
+<br>Virtual machine must work in sign testing mode. To set this option run `bcdedit /set testsigning on` 
+with administrator privileges and reboot your PC
+
 ###Links:
 - https://learn.microsoft.com/en-us/windows/win32/services/protecting-anti-malware-services-
 - https://github.com/microsoft/windows-drivers-rs/
