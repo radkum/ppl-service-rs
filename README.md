@@ -10,7 +10,11 @@ increase counter by 1 per second and log it. In addition, it delivers one import
 to turn off service protection by sending there special control code
 
 ### Description
-todo
+Anti-malware solutions typically use user-mode service that manages most actions. It's a 
+single point of failure in case of attack. Therefore it should be protected extremely strong. 
+
+To do that microsoft delivers PPL (protected process lite) mechanism. You can use ELAM (early lauch antimalware) driver 
+to register your service as protected.
 
 ###Getting Started
 1. At the beginning you need WDK and other stuff to build rust drivers. Let's look at: https://github.com/microsoft/windows-drivers-rs/
@@ -18,7 +22,8 @@ todo
 3. Use generate_cert.ps1 script to generate certificate necessary to signing, and resources to include by ELAM. Use:
 `cargo make resources`
 4. Build a binaries using: `cargo make compile`
-5. At the end sign binaries. Use: `cargo make sign`
+5. Rename elam_rs.dll to elam_rs.sys: `cargo make rename`
+6. At the end sign binaries. Use: `cargo make sign`
 
 PS: You can use `cargo make` to invoke these free last steps
 
