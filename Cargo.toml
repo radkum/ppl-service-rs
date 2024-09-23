@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "modules/elam-rs", "modules/win-service"
+    "modules/elam-rs", "modules/win-service-rs"
 ]
 
 [package]

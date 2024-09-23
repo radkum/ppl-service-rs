@@ -1,6 +1,6 @@
-[submodule "modules/win-service"]
-	path = modules/win-service
-	url = https://github.com/radkum/win-service
+[submodule "modules/win-service-rs"]
+	path = modules/win-service-rs
+	url = https://github.com/radkum/win-service-rs
 [submodule "modules/elam-rs"]
 	path = modules/elam-rs
 	url = https://github.com/radkum/elam-rs

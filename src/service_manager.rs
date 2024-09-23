@@ -41,7 +41,7 @@ fn imp_create_service(exe_file: &str, service_name: &str) -> Result<SmartHandle,
     let service_path = std::path::Path::new(exe_file);
     if !service_path.exists() {
         //something wrong
-        todo!()
+        eprintln!("There is no file such as \"{}\"", exe_file);
     }
     let service_cmd = service_path.canonicalize()?;
     let service_cmd = service_cmd.to_str().unwrap_or_default();
