@@ -160,13 +160,7 @@ pub(crate) fn change_service_config2(
 }
 
 pub(crate) fn start_service(h_service: HANDLE) -> Result<(), WinapiError> {
-    let status = unsafe {
-        StartServiceW(
-            h_service,
-            0,
-            null_mut(),
-        )
-    };
+    let status = unsafe { StartServiceW(h_service, 0, null_mut()) };
     if status == FALSE {
         Err(WinapiCallError::new("ControlService start").into())
     } else {

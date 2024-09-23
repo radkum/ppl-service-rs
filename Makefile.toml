@@ -1,9 +1,12 @@
+[config]
+default_to_workspace = false
+
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = "true"
 DRIVER_NAME = "elam_rs"
 EXE_NAME = "ppl"
 SERVICE_NAME = "win-service"
-DRIVER_CRATE_NAME = "elam_rs"
+DRIVER_CRATE_NAME = "elam-rs"
 VS_DEV_PROMPT = "\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\2019\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat\""
 
 [env.development]
@@ -14,7 +17,6 @@ TARGET_PATH="${CARGO_MAKE_CRATE_TARGET_DIRECTORY}\\release"
 BUILD_FLAGS = "--release"
 
 [tasks.resources]
-workspace = false
 script = [
     "powershell .\\generate_cert.ps1",
     "move %DRIVER_NAME%.rc modules\\%DRIVER_CRATE_NAME%"
@@ -25,13 +27,13 @@ command = "cargo"
 args = ["fmt"]
 
 [tasks.compile]
+workspace = true
 dependencies = ["format"]
 script = [
     "cargo build %BUILD_FLAGS%",
 ]
 
 [tasks.rename]
-workspace = false
 cwd = "${TARGET_PATH}"
 script = [
     "IF exist %DRIVER_NAME%.sys (del %DRIVER_NAME%.sys)",
@@ -39,7 +41,6 @@ script = [
 ]
 
 [tasks.sign]
-workspace = false
 script = [
     # Load the Visual Studio Developer environment
     "call %VS_DEV_PROMPT%",
@@ -51,7 +52,18 @@ script = [
 ]
 
 [tasks.all]
-dependencies = ["resources", "compile", "rename", "sign"]
+condition = { platforms = ["windows"], fail_message = "Condition Failed." }
+
+#dependencies = ["resources", "compile", "rename", "sign"]
+#unfortunately dependencies not works well. We need to invoke compile with workspace = flag, but it's not possible
+#in this way. Therefore I'm using ugly workaround
+script = [
+    "cargo make resources",
+    "cargo make compile",
+    "cargo make rename",
+    "cargo make sign",
+]
+
 
 [tasks.rebuild]
 dependencies = [
