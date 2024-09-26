@@ -1,13 +1,13 @@
+mod elam;
+
 use std::{thread, time::Duration};
 
-use windows_sys::Win32::{
-    Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_READ_DATA, FILE_SHARE_READ, OPEN_EXISTING},
-    System::Services::*,
-};
+use windows_sys::Win32::System::Services::*;
 
 use crate::{
+    service_manager::elam::{install_elam, unpack_elam},
     winapi,
-    winapi::{error::WinapiError, handle_wrapper::SmartHandle, install_elam_cert},
+    winapi::{error::WinapiError, handle_wrapper::SmartHandle},
 };
 
 pub(crate) fn create_normal_service(exe_file: &str, service_name: &str) -> Result<(), WinapiError> {
@@ -19,7 +19,9 @@ pub(crate) fn create_protected_service(
     exe_file: &str,
     service_name: &str,
 ) -> Result<(), WinapiError> {
-    install_elam()?;
+    let elam_path = unpack_elam()?;
+    install_elam(elam_path.to_str().unwrap_or_default())?;
+    //install_elam("elam_rs.sys")?;
 
     let sm_service = imp_create_service(exe_file, service_name)?;
 
@@ -53,25 +55,10 @@ fn imp_create_service(exe_file: &str, service_name: &str) -> Result<SmartHandle,
     Ok(h_service)
 }
 
-fn install_elam() -> Result<(), WinapiError> {
-    let file_handle = winapi::create_file(
-        "elam_rs.sys",
-        FILE_READ_DATA,
-        FILE_SHARE_READ,
-        None,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        None,
-    )?;
-    install_elam_cert(file_handle.get_raw())?;
-
-    log::info!("install_elam: Installed ELAM certificate");
-
-    Ok(())
-}
-
 pub(crate) fn remove_protected_service(service_name: &str) -> Result<(), WinapiError> {
-    install_elam()?;
+    let elam_path = unpack_elam()?;
+    install_elam(elam_path.to_str().unwrap_or_default())?;
+    //install_elam("elam_rs.sys")?;
 
     let manager_access = SC_MANAGER_ALL_ACCESS;
     let sh_manager = winapi::open_sc_manager(manager_access)?;
@@ -79,7 +66,7 @@ pub(crate) fn remove_protected_service(service_name: &str) -> Result<(), WinapiE
     let sh_service = winapi::open_service(sh_manager.get_raw(), service_name, SERVICE_ALL_ACCESS)?;
 
     let mut status_process_info = winapi::query_service_status_process_info(sh_service.get_raw())?;
-
+    //log::debug!("Service status: {}", status_process_info);
     for _ in 0..10 {
         if status_process_info.dwCurrentState == SERVICE_RUNNING {
             break;

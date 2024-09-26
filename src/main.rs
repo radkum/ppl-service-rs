@@ -13,6 +13,7 @@ pub(crate) mod winapi;
 const DEFAULT_SERVICE_PATH: &str = "win-service.exe";
 
 fn main() {
+    let _ = windebug_logger::init();
     let args: Vec<_> = std::env::args().collect();
 
     if args.len() != 3 && args.len() != 4 {
@@ -50,10 +51,10 @@ fn main() {
 
 fn print_help() {
     println!("Usage:");
-    println!("\tppl-install.exe <create|create_protected|remove> <service_name>");
+    println!("\tppl-install.exe <create|create_protected|delete|delete_protected> <service_name>");
     println!("\tor");
     println!(
-        "\tppl-install.exe <create|create_protected|remove> <service_name> \
+        "\tppl-install.exe <create|create_protected|delete|delete_protected> <service_name> \
          bin_path=<path_to_service>\n"
     );
     println!("In the first case path_to_service is default, and means \"win-service.exe\"");

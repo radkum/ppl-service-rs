@@ -26,11 +26,10 @@ script = [
 command = "cargo"
 args = ["fmt"]
 
-[tasks.compile]
-workspace = true
+[tasks.build-driver]
 dependencies = ["format"]
 script = [
-    "cargo build %BUILD_FLAGS%",
+    "cargo build %BUILD_FLAGS% -p %DRIVER_CRATE_NAME%",
 ]
 
 [tasks.rename]
@@ -38,6 +37,23 @@ cwd = "${TARGET_PATH}"
 script = [
     "IF exist %DRIVER_NAME%.sys (del %DRIVER_NAME%.sys)",
     "rename %DRIVER_NAME%.dll %DRIVER_NAME%.sys"
+]
+
+[tasks.sign-driver]
+dependencies = ["build-driver", "rename"]
+script = [
+    # Load the Visual Studio Developer environment
+    "call %VS_DEV_PROMPT%",
+
+    # Create a self signed certificate (only if not already done)
+    "if not exist %DRIVER_NAME%.pfx ( echo You are missing of certificate ) else ( signtool.exe sign /fd SHA256 /a /v /ph /f %DRIVER_NAME%.pfx /p password /t http://timestamp.digicert.com %TARGET_PATH%/%DRIVER_NAME%.sys )",
+]
+
+[tasks.compile]
+dependencies = ["format", "resources", "build-driver", "rename", "sign-driver"]
+script = [
+    "cargo build %BUILD_FLAGS% -p win-service-rs",
+    "cargo build %BUILD_FLAGS%",
 ]
 
 [tasks.sign]
